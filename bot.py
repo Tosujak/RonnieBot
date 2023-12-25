@@ -1,30 +1,36 @@
-# bot.py
-import random
+import interactions
+from os import getenv
+from dotenv import load_dotenv
 
-from discord.ext import commands
-from discord import Intents
+load_dotenv()
 
-intents = Intents.default()
-intents.message_content = True
+TOKEN = getenv("TOKEN")
+NERD_USER = int(getenv("NERD_USER"))
 
-bot = commands.Bot(command_prefix='/', intents=intents)
+bot = interactions.Client(intents=interactions.Intents.DEFAULT | interactions.Intents.MESSAGE_CONTENT)
 
+# boilerplate for commands
 
-@bot.command(name='99')
-async def _(ctx):
-    if ctx.author == bot.user:
+# @interactions.slash_command(name="command", description="kekw")
+#async def _(ctx: interactions.SlashContext):
+
+#    await ctx.send(response)
+
+@interactions.listen()
+async def on_message_create(event: interactions.api.events.MessageCreate):
+    if event.message.author == bot.user:
         return
+    
+    # message nerder
+    if event.message.author.id == NERD_USER:
+        await event.message.add_reaction("\U0001F913")
 
-    brooklyn_99_quotes = [
-        'I\'m the human form of the 💯 emoji.',
-        'Bingpot!',
-        (
-            'Cool. Cool cool cool cool cool cool cool, '
-            'no doubt no doubt no doubt no doubt.'
-        ),
-    ]
+    # pretty self explanatory
+    if "nigg" in event.message.content:
+        await event.message.channel.send(":warning:")
 
-    response = random.choice(brooklyn_99_quotes)
-    await ctx.channel.send(response)
+@interactions.listen()
+async def on_startup():
+    print("Bot ready")
 
-bot.run("MTE4ODYyNTAxMTY3NDcyNjQwMA.GBKHLC.2NsxWC17DJ4s3CUzkm9esN4P_nOpaEZCpRugWw")
+bot.start(TOKEN)
