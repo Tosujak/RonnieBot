@@ -1,6 +1,7 @@
 import interactions
 from os import getenv
 from dotenv import load_dotenv
+from random import randint
 
 load_dotenv()
 
@@ -9,12 +10,9 @@ NERD_USER = int(getenv("NERD_USER"))
 
 bot = interactions.Client(intents=interactions.Intents.DEFAULT | interactions.Intents.MESSAGE_CONTENT)
 
-# boilerplate for commands
-
-# @interactions.slash_command(name="command", description="kekw")
-#async def _(ctx: interactions.SlashContext):
-
-#    await ctx.send(response)
+@interactions.slash_command(name="kasparek")
+async def _(ctx: interactions.SlashContext):
+    await ctx.send(f'{randint(0,100)}cm')
 
 @interactions.listen()
 async def on_message_create(event: interactions.api.events.MessageCreate):
