@@ -1,9 +1,12 @@
-import interactions
 from os import getenv
 from dotenv import load_dotenv
 from random import randint, choice
 from datetime import datetime, timedelta
+from interactions import (Client, Intents, Status, Permissions, SlashContext, Member, Task, IntervalTrigger, OptionType, 
+                          listen, slash_command, slash_option, slash_default_member_permission)
+from interactions.api.events import MessageCreate
 
+# Custom lib
 from user import User, get_user, print_stats
 
 load_dotenv()
@@ -16,10 +19,10 @@ VAZENIE_ROOM = int(getenv("VAZENIE_ROOM"))
 BAN_LIST = []
 BANNED = []
 
-BOT = interactions.Client(intents=interactions.Intents.DEFAULT | 
-                          interactions.Intents.MESSAGE_CONTENT | 
-                          interactions.Intents.GUILD_MEMBERS | 
-                          interactions.Intents.GUILD_PRESENCES)
+BOT = Client(intents=Intents.DEFAULT | 
+                          Intents.MESSAGE_CONTENT | 
+                          Intents.GUILD_MEMBERS | 
+                          Intents.GUILD_PRESENCES)
 
 CP_OPTS = ["club penguin",
            "cheese pizza",
@@ -38,7 +41,8 @@ CP_OPTS = ["club penguin",
            "cunt piercing"]
 
 async def ban(bannee: User):
-    bannee.end_date = datetime.now() + timedelta(seconds=20) # TODO fix
+    # bannee.end_date = datetime.now() + timedelta(seconds=20) # TODO fix
+    bannee.end_date = datetime.now() + timedelta(hours=bannee.get_duration())
     await bannee.instance.add_role(BAN_ROLE)
     await bannee.instance.remove_role(NORMAL_ROLE)
     BAN_LIST.pop(BAN_LIST.index(bannee))
@@ -55,9 +59,9 @@ async def check_unban():
     for i in unbanned:
         BANNED.pop(i)
 
-@interactions.slash_command(name="gasparko", description="Better hope it's not cold outside")
-@interactions.slash_default_member_permission(interactions.Permissions.VIEW_CHANNEL)
-async def gasparko(ctx: interactions.SlashContext):
+@slash_command(name="gasparko", description="Better hope it's not cold outside")
+@slash_default_member_permission(Permissions.VIEW_CHANNEL)
+async def gasparko(ctx: SlashContext):
     value = randint(-20, 100)
     emote = ""
     if value > 80:
@@ -76,23 +80,23 @@ async def gasparko(ctx: interactions.SlashContext):
         emote = '<:klasika:1070481083084328970>'
     await ctx.send(f'{value}cm {emote}')
 
-@interactions.slash_command(name="online", description="Get information about online users")
-@interactions.slash_default_member_permission(interactions.Permissions.MANAGE_EMOJIS_AND_STICKERS)
-async def online(ctx: interactions.SlashContext):
+@slash_command(name="online", description="Get information about online users")
+@slash_default_member_permission(Permissions.MANAGE_EMOJIS_AND_STICKERS)
+async def online(ctx: SlashContext):
     await ctx.guild.gateway_chunk()
     reply = ""
     for member in ctx.guild.humans:
         reply += f'{member.display_name} => {member.status}\n'
-    reply += f'Total: {len([member for member in ctx.guild.humans if member.status])}'
+    reply += f'Total: {len([m for m in ctx.guild.humans if m.status and m.status != Status.OFFLINE])}'
     await ctx.send(reply, ephemeral=True)
 
-@interactions.slash_command(name="voteban", description="Vote to ban user")
-@interactions.slash_option(name="naughty_boy", description="Someone about to get banned", required=True, opt_type=interactions.OptionType.USER)
-@interactions.slash_option(name="hours", description="Time in hours", required=True, opt_type=interactions.OptionType.INTEGER, min_value=1, max_value=24)
-@interactions.slash_default_member_permission(interactions.Permissions.VIEW_CHANNEL)
-async def voteban(ctx: interactions.SlashContext, naughty_boy: interactions.Member, hours: int):
+@slash_command(name="voteban", description="Vote to ban user")
+@slash_option(name="naughty_boy", description="Someone about to get banned", required=True, opt_type=OptionType.USER)
+@slash_option(name="hours", description="Time in hours", required=True, opt_type=OptionType.INTEGER, min_value=1, max_value=24)
+@slash_default_member_permission(Permissions.VIEW_CHANNEL)
+async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
     await ctx.guild.gateway_chunk()
-    active_users = len([m for m in ctx.guild.humans if m.status])
+    active_users = len([m for m in ctx.guild.humans if m.status and m.status != Status.OFFLINE])
 
     if naughty_boy.id == ctx.member.id:
         await ctx.send(f'You can\'t ban yourself, dummy <:pocem:1037501105774538863>', ephemeral=True)
@@ -116,7 +120,6 @@ async def voteban(ctx: interactions.SlashContext, naughty_boy: interactions.Memb
             await ctx.send(f'You already voted to ban {naughty_boy.display_name}, dummy <:pocem:1037501105774538863>', ephemeral=True)
             return
         curr_user.update_stats(naughty_boy.display_name, ctx.member.id, hours, active_users)
-        # curr_user.update_stats(naughty_boy.display_name, ctx.member.id, hours, 3) # TODO fix
     else:
         BAN_LIST.append(User(naughty_boy.id, naughty_boy.display_name, ctx.member.id, hours, active_users, naughty_boy))
 
@@ -125,7 +128,7 @@ async def voteban(ctx: interactions.SlashContext, naughty_boy: interactions.Memb
     curr_user = get_user(naughty_boy.id, BAN_LIST)
     if curr_user.is_bannable():
         message = await ban(curr_user)
-        await ctx.guild.get_channel(VAZENIE_ROOM).send(message) # TODO fix
+        await ctx.guild.get_channel(VAZENIE_ROOM).send(message)
         await ctx.guild.get_channel(ctx.channel_id).send(message)
 
     # await ctx.send(f'{ctx.guild.get_member(naughty_boy.id).mention}')
@@ -134,8 +137,8 @@ async def voteban(ctx: interactions.SlashContext, naughty_boy: interactions.Memb
 # TODO check if user can unvote by checking if he is in the voter list
 
 
-@interactions.listen()
-async def on_message_create(event: interactions.api.events.MessageCreate):
+@listen()
+async def on_message_create(event: MessageCreate):
     if event.message.author == BOT.user:
         return
     
@@ -152,9 +155,9 @@ async def on_message_create(event: interactions.api.events.MessageCreate):
     if "nigg" in mssg or "negger" in mssg or "neger" in mssg:
         await event.message.channel.send(":warning:")
 
-@interactions.listen()
+@listen()
 async def on_startup():
     print("Bot ready")
-    interactions.Task(check_unban, interactions.IntervalTrigger(seconds=10)).start()
+    Task(check_unban, IntervalTrigger(minutes=30)).start()
 
 BOT.start(TOKEN)
