@@ -41,7 +41,6 @@ CP_OPTS = ["club penguin",
            "cunt piercing"]
 
 async def ban(bannee: User):
-    # bannee.end_date = datetime.now() + timedelta(seconds=20) # TODO fix
     bannee.end_date = datetime.now() + timedelta(hours=bannee.get_duration())
     await bannee.instance.add_role(BAN_ROLE)
     await bannee.instance.remove_role(NORMAL_ROLE)
@@ -158,6 +157,6 @@ async def on_message_create(event: MessageCreate):
 @listen()
 async def on_startup():
     print("Bot ready")
-    Task(check_unban, IntervalTrigger(minutes=30)).start()
+    Task(check_unban, IntervalTrigger(minutes=1)).start()
 
 BOT.start(TOKEN)
