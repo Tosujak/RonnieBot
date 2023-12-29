@@ -2,7 +2,7 @@ from os import getenv
 from dotenv import load_dotenv
 from random import randint, choice
 from datetime import datetime, timedelta
-from interactions import (Client, Intents, Status, Permissions, SlashContext, Member, Task, IntervalTrigger, OptionType, 
+from interactions import (Client, Intents, Status, Permissions, SlashContext, Member, Task, IntervalTrigger, OptionType, Activity, ActivityType, 
                           listen, slash_command, slash_option, slash_default_member_permission)
 from interactions.api.events import MessageCreate
 
@@ -136,27 +136,51 @@ async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
 # TODO check if user can unvote by checking if he is in the voter list
 
 
+@slash_command(name="voteban_stats", description="How many votes does each bannee have?")
+@slash_default_member_permission(Permissions.VIEW_CHANNEL)
+async def votebanstats(ctx: SlashContext):
+    if BAN_LIST:
+        message = print_stats(BAN_LIST)
+    else:
+        message = "There currently are no votes"
+    await ctx.send(message)
+
+@slash_command(name="whats_new", description="What are some new features?")
+@slash_default_member_permission(Permissions.VIEW_CHANNEL)
+async def whats_new(ctx: SlashContext):
+    message = "DEEZ NUTS... but now for real:\
+        \r\t1) **/whats_new** - describes some new features, get more detail by invoking the **/whats_new** command || fuck recursion <:pocem:1037501105774538863> ||\
+        \r\t2) **/voteban_stats** - shows current vote count for each ban candidate"
+    await ctx.send(message, ephemeral=True)
+
 @listen()
 async def on_message_create(event: MessageCreate):
     if event.message.author == BOT.user:
         return
     
+    message = event.message.content.lower()
+
     # message nerder
     # if event.message.author.id == NERD_USER:
     #     await event.message.add_reaction("\U0001F913")
 
+    if "gemini" in message:
+        await event.message.channel.send("Damn right gurl :nail_care: :nail_care: :nail_care:")
+ 
     # oops
-    if "cp" in event.message.content.lower():
+    if "cp" in message:
         await event.message.channel.send(f'Did you mean {choice(CP_OPTS)}? :thinking:')
 
     # pretty self explanatory
-    mssg = event.message.content.lower()
-    if "nigg" in mssg or "negger" in mssg or "neger" in mssg:
+    if "nigg" in message or "negger" in message or "neger" in message:
         await event.message.channel.send(":warning:")
 
 @listen()
 async def on_startup():
     print("Bot ready")
+    for guild in BOT.guilds:
+        await guild.gateway_chunk()
+    await BOT.change_presence(activity=Activity(name="deez nuts", type=ActivityType.WATCHING))
     Task(check_unban, IntervalTrigger(minutes=1)).start()
 
 BOT.start(TOKEN)
