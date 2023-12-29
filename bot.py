@@ -173,7 +173,6 @@ async def on_message_create(event: MessageCreate):
         await event.message.channel.send(f'Did you mean {choice(CP_OPTS)}? :thinking:')
 
     # pretty self explanatory
-    # if "nigg" in message or "negger" in message or "neger" in message:
     if any(x in message for x in naughty_words):
         await event.message.channel.send(":warning:")
 
