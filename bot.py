@@ -235,6 +235,7 @@ async def on_message_create(event: MessageCreate):
     # naughty
     if any(x in message for x in NWORDS):
         await event.message.add_reaction("<:pampolicaj:1065346947734577266>")
+        return
 
     # pretty self explanatory
     if search(r"n+([ehiy]+|ay|ey|io|[il]+)[bgq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*", message):
