@@ -1,4 +1,5 @@
 from os import getenv
+from re import search
 from dotenv import load_dotenv
 from random import randint, choice
 from datetime import datetime, timedelta
@@ -38,7 +39,24 @@ CP_OPTS = ["club penguin",
            "capture point",
            "cock piercing",
            "cibulova polievka",
-           "cunt piercing"]
+           "cunt piercing",
+           "cestovny poriadok",
+           "cerebral palsy"]
+
+NWORDS = ["niggardliness",
+          "niggardly",
+          "niggerfish",
+          "nigger-fish",
+          "niggerfishes",
+          "nigger-fishes",
+          "niggler",
+          "nigglers",
+          "niggly",
+          "sniggeringly",
+          "sniggle",
+          "snigglers",
+          "sniggling",
+          "unniggardly"]
 
 async def ban(bannee: User):
     bannee.end_date = datetime.now() + timedelta(hours=bannee.get_duration())
@@ -201,22 +219,25 @@ async def on_message_create(event: MessageCreate):
     if event.message.author == BOT.user:
         return
 
-    naughty_words = ["nigg", "negger", "neger"]
     message = event.message.content.lower()
 
     # message nerder
     # if event.message.author.id == NERD_USER:
     #     await event.message.add_reaction("\U0001F913")
 
-    if "gemini" in message:
+    if "gemini" in message.split(" "):
         await event.message.channel.send("Damn right gurl :nail_care: :nail_care: :nail_care:")
  
     # oops
-    if "cp" in message:
+    if "cp" in message.split(" "):
         await event.message.channel.send(f'Did you mean {choice(CP_OPTS)}? :thinking:')
 
+    # naughty
+    if any(x in message for x in NWORDS):
+        await event.message.add_reaction("<:pampolicaj:1065346947734577266>")
+
     # pretty self explanatory
-    if any(x in message for x in naughty_words):
+    if search(r"n+([ehiy]+|ay|ey|io|[il]+)[bgq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*", message):
         await event.message.channel.send(":warning:")
 
 @listen()
