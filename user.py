@@ -1,4 +1,5 @@
 from interactions import Member
+from datetime import datetime
 
 class User():
     def __init__(self, uid: int, handle: str, voter_uid: int, curr_duration: int, curr_online: int, instance: Member):
@@ -29,6 +30,9 @@ class User():
     
     def get_duration(self) -> int:
         return round(sum(self.voters.values())/len(self.voters))
+    
+    def set_duration(self, new_date: datetime) -> None:
+        self.end_date = new_date
 
 def get_user(uid: int, user_list: []) -> User | None:
     for user in user_list:

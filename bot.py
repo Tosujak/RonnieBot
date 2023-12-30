@@ -16,6 +16,7 @@ TOKEN = getenv("TOKEN")
 NERD_USER = int(getenv("NERD_USER"))
 BAN_ROLE = int(getenv("BAN_ROLE"))
 NORMAL_ROLE = int(getenv("NORMAL_ROLE"))
+HLASKA_ROLE = int(getenv("HLASKA_ROLE"))
 VAZENIE_ROOM = int(getenv("VAZENIE_ROOM"))
 BAN_LIST = []
 BANNED = []
@@ -50,11 +51,12 @@ GOOD_NWORDS = ["niggard",
                "snigger"]
 
 async def ban(bannee: User):
-    bannee.end_date = datetime.now() + timedelta(hours=bannee.get_duration())
-    await bannee.instance.add_role(BAN_ROLE)
-    await bannee.instance.remove_role(NORMAL_ROLE)
+    bannee.set_duration(datetime.now() + timedelta(hours=bannee.get_duration()))
     BAN_LIST.pop(BAN_LIST.index(bannee))
     BANNED.append(bannee)
+    await bannee.instance.add_role(BAN_ROLE)
+    await bannee.instance.remove_role(NORMAL_ROLE)
+    await bannee.instance.remove_role(HLASKA_ROLE)
 
 async def check_unban():
     unbanned = []
@@ -62,6 +64,7 @@ async def check_unban():
         if bannee.end_date < datetime.now():
             await bannee.instance.remove_role(BAN_ROLE)
             await bannee.instance.add_role(NORMAL_ROLE)
+            await bannee.instance.add_role(HLASKA_ROLE)
             unbanned.append(BANNED.index(bannee))
     for i in unbanned:
         BANNED.pop(i)
@@ -92,6 +95,28 @@ async def list_permissions(ctx: SlashContext, user: Member):
     message = ""
     for role in roles:
         message += f'{role.name}:\n\t{[permission.name for permission in role.permissions]}\n'
+    await ctx.send(message, ephemeral=True)
+
+@slash_command(name="print_ban_list", description="**ADMIN**: Get information about banlist")
+async def print_ban_list(ctx: SlashContext):
+    await ctx.guild.gateway_chunk()
+    message = ""
+    if not BAN_LIST:
+        message = "No ban candidates"
+    else:
+        for user in BAN_LIST:
+            message += f'{user.handle} -> {user.get_duration()}\n'
+    await ctx.send(message, ephemeral=True)
+
+@slash_command(name="print_banned_list", description="**ADMIN**: Get information about banned users")
+async def print_banned_list(ctx: SlashContext):
+    await ctx.guild.gateway_chunk()
+    message = ""
+    if not BANNED:
+        message = "No banned users"
+    else:
+        for user in BANNED:
+            message += f'{user.handle} -> {user.end_date}\n'
     await ctx.send(message, ephemeral=True)
 ##########################################################################################
 
