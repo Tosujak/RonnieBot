@@ -43,20 +43,11 @@ CP_OPTS = ["club penguin",
            "cestovny poriadok",
            "cerebral palsy"]
 
-NWORDS = ["niggardliness",
-          "niggardly",
-          "niggerfish",
-          "nigger-fish",
-          "niggerfishes",
-          "nigger-fishes",
-          "niggler",
-          "nigglers",
-          "niggly",
-          "sniggeringly",
-          "sniggle",
-          "snigglers",
-          "sniggling",
-          "unniggardly"]
+NWORDS = ["niggard",
+          "niggerf",
+          "nigger-f",
+          "niggl",
+          "snigger"]
 
 async def ban(bannee: User):
     bannee.end_date = datetime.now() + timedelta(hours=bannee.get_duration())
