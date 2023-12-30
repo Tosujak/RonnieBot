@@ -47,7 +47,8 @@ GOOD_NWORDS = ["niggard",
                "niggerf",
                "nigger-f",
                "niggl",
-               "snigger"]
+               "snigger",
+               "neba"]
 
 async def ban(bannee: User):
     bannee.end_date = datetime.now() + timedelta(hours=bannee.get_duration())
