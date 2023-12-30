@@ -198,6 +198,9 @@ async def self_unverify(ctx: SlashContext, hours: int):
     if await admin_checker(ctx):
         return
 
+    curr_user = get_user(ctx.member.id, BAN_LIST)
+    if curr_user:
+        BAN_LIST.pop(BAN_LIST.index(curr_user))
     BAN_LIST.append(User(ctx.member.id, ctx.member.display_name, ctx.member.id, hours, 0, ctx.member))
     curr_user = get_user(ctx.member.id, BAN_LIST)
     await ban(curr_user)
