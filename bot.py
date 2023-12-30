@@ -66,14 +66,12 @@ async def check_unban():
     for i in unbanned:
         BANNED.pop(i)
 
-def admin_checker(func):
-    async def wrapper(ctx: SlashContext, *args, **kwargs):
-        if BAN_ROLE in [role.id for role in ctx.member.roles] and ctx.guild.is_owner(ctx.member.id):
-            await ctx.send(f'{ctx.member.display_name} stop it, dummy <:pocem:1037501105774538863>', ephemeral=True)
-            return None
-        else:
-            await func(ctx, *args, **kwargs)
-    return wrapper
+async def admin_checker(ctx: SlashContext):
+    if BAN_ROLE in [role.id for role in ctx.member.roles] and ctx.guild.is_owner(ctx.member.id):
+        await ctx.send(f'{ctx.member.display_name} stop it, dummy <:pocem:1037501105774538863>', ephemeral=True)
+        return True
+    else:
+        return False
 
 # ADMIN COMMANDS #
 ##########################################################################################
@@ -98,8 +96,9 @@ async def list_permissions(ctx: SlashContext, user: Member):
 ##########################################################################################
 
 @slash_command(name="gasparko", description="Better hope it's not cold outside")
-@admin_checker
 async def gasparko(ctx: SlashContext):
+    if await admin_checker(ctx):
+        return
     value = randint(-20, 100)
     emote = ""
     if value > 80:
@@ -121,9 +120,12 @@ async def gasparko(ctx: SlashContext):
 @slash_command(name="voteban", description="Vote to ban user")
 @slash_option(name="naughty_boy", description="Someone about to get banned", required=True, opt_type=OptionType.USER)
 @slash_option(name="hours", description="Time in hours", required=True, opt_type=OptionType.INTEGER, min_value=1, max_value=24)
-@admin_checker
 async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
     await ctx.guild.gateway_chunk()
+    
+    if await admin_checker(ctx):
+        return
+
     active_users = len([m for m in ctx.guild.humans if m.status and m.status != Status.OFFLINE])
 
     if naughty_boy.id == ctx.member.id:
@@ -167,8 +169,10 @@ async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
 
 @slash_command(name="self_unverify", description="For nerds; ban yourself for a given time period")
 @slash_option(name="hours", description="Time in hours", required=True, opt_type=OptionType.INTEGER, min_value=1, max_value=24)
-@admin_checker
 async def self_unverify(ctx: SlashContext, hours: int):
+    if await admin_checker(ctx):
+        return
+
     BAN_LIST.append(User(ctx.member.id, ctx.member.display_name, ctx.member.id, hours, 0, ctx.member))
     curr_user = get_user(ctx.member.id, BAN_LIST)
     await ban(curr_user)
@@ -185,8 +189,9 @@ async def time_left(ctx: SlashContext):
     await ctx.send(f'You will be banned until {get_user(ctx.member.id, BANNED).end_date}', ephemeral=True)
 
 @slash_command(name="voteban_stats", description="How many votes does each bannee have?")
-@admin_checker
 async def voteban_stats(ctx: SlashContext):
+    if await admin_checker(ctx):
+        return
     if BAN_LIST:
         message = print_stats(BAN_LIST)
     else:
