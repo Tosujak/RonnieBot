@@ -220,7 +220,7 @@ async def on_message_create(event: MessageCreate):
 
     # naughty
     for word in message.split(" "):
-        if search(r"n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*", word):
+        if search(r"^n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*$", word):
             tag = True
             if not any(x in word for x in GOOD_NWORDS):
                 await event.message.channel.send(":warning:")
