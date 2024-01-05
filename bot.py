@@ -1,6 +1,7 @@
 from os import getenv
 from signal import SIGINT, SIGTERM
 from asyncio import gather, get_event_loop, create_task, ensure_future
+from time import sleep
 from re import search
 from dotenv import load_dotenv
 from random import randint, choice
@@ -8,6 +9,7 @@ from datetime import datetime, timedelta
 from interactions import (Client, Intents, Status, SlashContext, Member, Task, IntervalTrigger, TimeTrigger, OptionType, Activity, ActivityType, 
                           listen, slash_command, slash_option)
 from interactions.api.events import MessageCreate
+from typing import cast
 
 # Custom lib
 from user import User, get_user, print_stats
@@ -23,6 +25,7 @@ VAZENIE_ROOM = int(getenv("VAZENIE_ROOM"))
 BOT_ROOM = int(getenv("BOT_ROOM"))
 BAN_LIST = []
 BANNED = []
+GASPARKO_LIST = []
 
 BOT = Client(intents=Intents.DEFAULT | 
                           Intents.MESSAGE_CONTENT | 
@@ -55,10 +58,14 @@ GOOD_NWORDS = ["niggard",
 
 # AUX METHODS #
 ############################
-async def ban(bannee: User):
-    bannee.set_duration(datetime.now() + timedelta(hours=bannee.get_duration()))
+async def ban(bannee: User, ctx: SlashContext, str_format: str):
+    bannee.set_duration(datetime.now() + timedelta(seconds=bannee.get_duration()))
     BAN_LIST.pop(BAN_LIST.index(bannee))
     BANNED.append(bannee)
+    message = str_format.format(**{"user": bannee.instance.display_name, "date": bannee.end_date})
+    await ctx.guild.get_channel(VAZENIE_ROOM).send(message)
+    await ctx.guild.get_channel(ctx.channel_id).send(message)
+    sleep(1)
     await bannee.instance.add_role(BAN_ROLE)
     await bannee.instance.remove_role(NORMAL_ROLE)
     await bannee.instance.remove_role(HLASKA_ROLE)
@@ -78,7 +85,7 @@ async def sig_handler(_):
 
 # TASKS #
 ########################################
-@Task.create(IntervalTrigger(minutes=1))
+@Task.create(IntervalTrigger(seconds=10))
 async def check_unban():
     unbanned = []
     for bannee in BANNED:
@@ -88,11 +95,12 @@ async def check_unban():
             await bannee.instance.add_role(HLASKA_ROLE)
             unbanned.append(BANNED.index(bannee))
     for i in unbanned:
-        BANNED.pop(i)
+        user = cast(User, BANNED.pop(i))
+        await BOT.get_channel(VAZENIE_ROOM).send(f'Welcome back {user.instance.mention}')
 
 @Task.create(TimeTrigger(hour=0, minute=0, utc=False))
-async def kekw():
-    print("HAAA")
+async def reset():
+    GASPARKO_LIST.clear()
 ########################################
 
 # ADMIN COMMANDS #
@@ -145,7 +153,17 @@ async def print_banned_list(ctx: SlashContext):
 async def gasparko(ctx: SlashContext):
     if await admin_checker(ctx):
         return
+
     value = randint(-20, 100)
+
+    curr_user = get_user(ctx.member.id, GASPARKO_LIST)
+    if curr_user:
+        print(curr_user)
+        await ctx.send(f'You already measured your gasparko today, dummy <:pocem:1037501105774538863> it was {curr_user.get_duration()}cm', ephemeral=True)
+        return
+    else:
+        GASPARKO_LIST.append(User(ctx.member.id, ctx.member.display_name, 0, value, 0, ctx.member))
+
     emote = ""
     if value > 80:
         emote = '<:peknyNazorBrasko:1041866001714778152>'
@@ -199,16 +217,11 @@ async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
     else:
         BAN_LIST.append(User(naughty_boy.id, naughty_boy.display_name, ctx.member.id, hours, active_users, naughty_boy))
 
-    await ctx.send(print_stats(BAN_LIST))
+    await ctx.send(f'{ctx.member.display_name} voted to ban {naughty_boy.display_name} for {hours}h\n\n{print_stats(BAN_LIST)}')
 
     curr_user = get_user(naughty_boy.id, BAN_LIST)
     if curr_user.is_bannable():
-        await ban(curr_user)
-        message = f'Banned {curr_user.instance.display_name} until {curr_user.end_date}'
-        await ctx.guild.get_channel(VAZENIE_ROOM).send(message)
-        await ctx.guild.get_channel(ctx.channel_id).send(message)
-
-    # await ctx.send(f'{ctx.guild.get_member(naughty_boy.id).mention}')
+        await ban(curr_user, ctx, "Banned {user} until {date}")
 
 # @interactions.slash_command(name="voteunban", description=)
 # TODO check if user can unvote by checking if he is in the voter list
@@ -224,10 +237,9 @@ async def self_unverify(ctx: SlashContext, hours: int):
         BAN_LIST.pop(BAN_LIST.index(curr_user))
     BAN_LIST.append(User(ctx.member.id, ctx.member.display_name, ctx.member.id, hours, 0, ctx.member))
     curr_user = get_user(ctx.member.id, BAN_LIST)
-    await ban(curr_user)
-    message = f'{curr_user.instance.display_name} self unverified until {curr_user.end_date}'
-    await ctx.guild.get_channel(VAZENIE_ROOM).send(message)
-    await ctx.guild.get_channel(ctx.channel_id).send(message)
+    tmp = await ctx.send("Alright", ephemeral=True)
+    await ban(curr_user, ctx, "{user} self unverified until {date}")
+    await ctx.delete(tmp)
 
 @slash_command(name="time_left", description="How long until I get unbanned?")
 async def time_left(ctx: SlashContext):
@@ -252,16 +264,26 @@ async def voteban_stats(ctx: SlashContext):
 ###########################################################################
 @slash_command(name="whats_new", description="What are some new features?")
 async def whats_new(ctx: SlashContext):
-    message = "CHANGELOG 05.01.2024\
-        \r# Post Christmas Procrastination Spree:\
+    message = "# 05.01.2024 Changelog\
+        \r## Other notes:\
+        \r\t- freshly unbanned user will be tagged in the bot room\
+        \r\t- **/voteban** now shows who voted for whom and for how long upon invoking\
+        \r\t- **/gasparko** is now usable only once every 24 hours, let's be fair people <:velkaRadost:1169613223734026253>, resets at midnight\
+        \r\t- RikiBot now announces when it connects and disconnects from the server\
+        \r## Bugfixes:\
+        \r\t- fixed *\"The application did not respond\"* bug\
+        \r# Post Christmas Procrastination Spree\
+        \r## Commands:\
         \r\t- **/whats_new** - describes some new features, get more detail by invoking the **/whats_new** command || fuck recursion <:pocem:1037501105774538863> ||\
         \r\t- **/voteban_stats** - shows current vote count for each ban candidate\
         \r\t- **/self_unverify** - bans you for a given time period set by you\
         \r\t- **/time_left** - shows when you will be unbanned, you need to be banned to see that tho\
-        \r# Christmas Procrastination Spree:\
+        \r# Christmas Procrastination Spree\
+        \r## Commands:\
         \r\t- **/voteban** - so our beloved admin wouldn't have to deal with it <:pocem:1037501105774538863>\
         \r\t- **/gasparko** - best thing ever\
-        \r\t- a couple of particular tokens that underwent a major rework and apparently still need some work <:velkySmutok:1167847065968189550>"
+        \r## Other notes:\
+        \r\t- a couple of particular tokens returning particular messages that underwent a major rework and apparently still need some work <:velkySmutok:1167847065968189550>"
     await ctx.send(message)
 ###########################################################################
 
@@ -309,6 +331,7 @@ async def on_startup():
     # START TASKS #
     ###################
     check_unban.start()
+    reset.start()
     ###################
 
 BOT.start(TOKEN)

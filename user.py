@@ -41,7 +41,7 @@ def get_user(uid: int, user_list: []) -> User | None:
     return None
 
 def print_stats(user_list: []) -> str:
-    ret_str = "Ban candidates:\n"
+    ret_str = "**Ban candidates:**\n"
     for user in user_list:
         ret_str += f'\t{user.handle}: {user.vote_count}/{user.curr_online}, avg duration: {user.get_duration()}h\n'
     return ret_str
