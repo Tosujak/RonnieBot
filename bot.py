@@ -1,9 +1,11 @@
 from os import getenv
+from signal import SIGINT, SIGTERM
+from asyncio import gather, get_event_loop, create_task, ensure_future
 from re import search
 from dotenv import load_dotenv
 from random import randint, choice
 from datetime import datetime, timedelta
-from interactions import (Client, Intents, Status, SlashContext, Member, Task, IntervalTrigger, OptionType, Activity, ActivityType, 
+from interactions import (Client, Intents, Status, SlashContext, Member, Task, IntervalTrigger, TimeTrigger, OptionType, Activity, ActivityType, 
                           listen, slash_command, slash_option)
 from interactions.api.events import MessageCreate
 
@@ -18,6 +20,7 @@ BAN_ROLE = int(getenv("BAN_ROLE"))
 NORMAL_ROLE = int(getenv("NORMAL_ROLE"))
 HLASKA_ROLE = int(getenv("HLASKA_ROLE"))
 VAZENIE_ROOM = int(getenv("VAZENIE_ROOM"))
+BOT_ROOM = int(getenv("BOT_ROOM"))
 BAN_LIST = []
 BANNED = []
 
@@ -50,6 +53,8 @@ GOOD_NWORDS = ["niggard",
                "niggl",
                "snigger"]
 
+# AUX METHODS #
+############################
 async def ban(bannee: User):
     bannee.set_duration(datetime.now() + timedelta(hours=bannee.get_duration()))
     BAN_LIST.pop(BAN_LIST.index(bannee))
@@ -58,6 +63,22 @@ async def ban(bannee: User):
     await bannee.instance.remove_role(NORMAL_ROLE)
     await bannee.instance.remove_role(HLASKA_ROLE)
 
+async def admin_checker(ctx: SlashContext):
+    if BAN_ROLE in [role.id for role in ctx.member.roles] and ctx.guild.is_owner(ctx.member.id):
+        await ctx.send(f'{ctx.member.display_name} stop it, dummy <:pocem:1037501105774538863>', ephemeral=True)
+        return True
+    else:
+        return False
+
+async def sig_handler(_):
+    await BOT.get_channel(BOT_ROOM).send(f'{BOT.user.mention} **GOING OFFLINE**, smell ya later nerds <:nrd:1165680185933312120>')
+    await gather(ensure_future(BOT.stop()))
+    get_event_loop().stop()
+############################
+
+# TASKS #
+########################################
+@Task.create(IntervalTrigger(minutes=1))
 async def check_unban():
     unbanned = []
     for bannee in BANNED:
@@ -69,12 +90,10 @@ async def check_unban():
     for i in unbanned:
         BANNED.pop(i)
 
-async def admin_checker(ctx: SlashContext):
-    if BAN_ROLE in [role.id for role in ctx.member.roles] and ctx.guild.is_owner(ctx.member.id):
-        await ctx.send(f'{ctx.member.display_name} stop it, dummy <:pocem:1037501105774538863>', ephemeral=True)
-        return True
-    else:
-        return False
+@Task.create(TimeTrigger(hour=0, minute=0, utc=False))
+async def kekw():
+    print("HAAA")
+########################################
 
 # ADMIN COMMANDS #
 ##########################################################################################
@@ -120,6 +139,8 @@ async def print_banned_list(ctx: SlashContext):
     await ctx.send(message, ephemeral=True)
 ##########################################################################################
 
+# SLASH COMMANDS #
+################################################################################
 @slash_command(name="gasparko", description="Better hope it's not cold outside")
 async def gasparko(ctx: SlashContext):
     if await admin_checker(ctx):
@@ -225,16 +246,22 @@ async def voteban_stats(ctx: SlashContext):
     else:
         message = "There currently are no votes"
     await ctx.send(message)
+################################################################################
 
 # NEWS TELLER #
 ###########################################################################
 @slash_command(name="whats_new", description="What are some new features?")
 async def whats_new(ctx: SlashContext):
-    message = "DEEZ NUTS... but now for real:\
-        \r\t1) **/whats_new** - describes some new features, get more detail by invoking the **/whats_new** command || fuck recursion <:pocem:1037501105774538863> ||\
-        \r\t2) **/voteban_stats** - shows current vote count for each ban candidate\
-        \r\t3) **/self_unverify** - bans you for a given time period set by you\
-        \r\t4) **/time_left** - shows when you will be unbanned, you need to be banned to see that tho"
+    message = "CHANGELOG 05.01.2024\
+        \r# Post Christmas Procrastination Spree:\
+        \r\t- **/whats_new** - describes some new features, get more detail by invoking the **/whats_new** command || fuck recursion <:pocem:1037501105774538863> ||\
+        \r\t- **/voteban_stats** - shows current vote count for each ban candidate\
+        \r\t- **/self_unverify** - bans you for a given time period set by you\
+        \r\t- **/time_left** - shows when you will be unbanned, you need to be banned to see that tho\
+        \r# Christmas Procrastination Spree:\
+        \r\t- **/voteban** - so our beloved admin wouldn't have to deal with it <:pocem:1037501105774538863>\
+        \r\t- **/gasparko** - best thing ever\
+        \r\t- a couple of particular tokens that underwent a major rework and apparently still need some work <:velkySmutok:1167847065968189550>"
     await ctx.send(message)
 ###########################################################################
 
@@ -243,11 +270,11 @@ async def on_message_create(event: MessageCreate):
     if event.message.author == BOT.user:
         return
 
-    message = event.message.content.lower()
+    words = event.message.content.lower().split(" ")
     tag = False
 
     # naughty
-    for word in message.split(" "):
+    for word in words:
         if search(r"^n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*$", word):
             tag = True
             if not any(x in word for x in GOOD_NWORDS):
@@ -260,19 +287,28 @@ async def on_message_create(event: MessageCreate):
     # if event.message.author.id == NERD_USER:
     #     await event.message.add_reaction("\U0001F913")
 
-    if "gemini" in message.split(" "):
+    if "gemini" in words or "geminis" in words:
         await event.message.channel.send("Damn right gurl :nail_care: :nail_care: :nail_care:")
  
     # oops
-    if "cp" in message.split(" "):
-        await event.message.channel.send(f'Did you mean {choice(CP_OPTS)}? :thinking:')
+    if "cp" in words:
+        picked = choice(CP_OPTS)
+        await event.message.channel.send(f'Did you mean {picked}? :thinking:')
+        if picked == "child porn":
+            await event.message.channel.send(f'YOU DID IT {event.message.author.mention} :partying_face:')
 
 @listen()
 async def on_startup():
-    print("Bot ready")
     for guild in BOT.guilds:
         await guild.gateway_chunk()
+    await BOT.get_channel(BOT_ROOM).send(f'{BOT.user.mention} **ONLINE**, I\'m back bitches <:peknyNazorBrasko:1041866001714778152>')
     await BOT.change_presence(activity=Activity(name="deez nuts", type=ActivityType.WATCHING))
-    Task(check_unban, IntervalTrigger(minutes=1)).start()
+    for sig in [SIGINT, SIGTERM]:
+        get_event_loop().add_signal_handler(sig, lambda sig=sig: create_task(sig_handler(sig)))
+
+    # START TASKS #
+    ###################
+    check_unban.start()
+    ###################
 
 BOT.start(TOKEN)
