@@ -12,7 +12,7 @@ from interactions.api.events import MessageCreate
 from typing import cast
 
 # Custom lib
-from user import User, get_user, print_stats
+from user import User, get_user, print_stats, print_gasparko_tierlist
 
 load_dotenv()
 
@@ -59,7 +59,7 @@ GOOD_NWORDS = ["niggard",
 # AUX METHODS #
 ############################
 async def ban(bannee: User, ctx: SlashContext, str_format: str):
-    bannee.set_duration(datetime.now() + timedelta(seconds=bannee.get_duration()))
+    bannee.set_duration(datetime.now() + timedelta(hours=bannee.get_duration()))
     BAN_LIST.pop(BAN_LIST.index(bannee))
     BANNED.append(bannee)
     message = str_format.format(**{"user": bannee.instance.display_name, "date": bannee.end_date})
@@ -85,7 +85,7 @@ async def sig_handler(_):
 
 # TASKS #
 ########################################
-@Task.create(IntervalTrigger(seconds=10))
+@Task.create(IntervalTrigger(seconds=30))
 async def check_unban():
     unbanned = []
     for bannee in BANNED:
@@ -96,7 +96,7 @@ async def check_unban():
             unbanned.append(BANNED.index(bannee))
     for i in unbanned:
         user = cast(User, BANNED.pop(i))
-        await BOT.get_channel(VAZENIE_ROOM).send(f'Welcome back {user.instance.mention}')
+        await BOT.get_channel(BOT_ROOM).send(f'Welcome back {user.instance.mention}')
 
 @Task.create(TimeTrigger(hour=0, minute=0, utc=False))
 async def reset():
@@ -158,7 +158,6 @@ async def gasparko(ctx: SlashContext):
 
     curr_user = get_user(ctx.member.id, GASPARKO_LIST)
     if curr_user:
-        print(curr_user)
         await ctx.send(f'You already measured your gasparko today, dummy <:pocem:1037501105774538863> it was {curr_user.get_duration()}cm', ephemeral=True)
         return
     else:
@@ -180,6 +179,10 @@ async def gasparko(ctx: SlashContext):
     else:
         emote = '<:klasika:1070481083084328970>'
     await ctx.send(f'{value}cm {emote}')
+
+@slash_command(name="gasparko_tierlist", description="Who had the biggest gasparko today?")
+async def gasparko_tierlist(ctx: SlashContext):
+    await ctx.send(print_gasparko_tierlist(GASPARKO_LIST))
 
 @slash_command(name="voteban", description="Vote to ban user")
 @slash_option(name="naughty_boy", description="Someone about to get banned", required=True, opt_type=OptionType.USER)
@@ -264,26 +267,31 @@ async def voteban_stats(ctx: SlashContext):
 ###########################################################################
 @slash_command(name="whats_new", description="What are some new features?")
 async def whats_new(ctx: SlashContext):
-    message = "# 05.01.2024 Changelog\
-        \r## Other notes:\
-        \r\t- freshly unbanned user will be tagged in the bot room\
-        \r\t- **/voteban** now shows who voted for whom and for how long upon invoking\
-        \r\t- **/gasparko** is now usable only once every 24 hours, let's be fair people <:velkaRadost:1169613223734026253>, resets at midnight\
-        \r\t- RikiBot now announces when it connects and disconnects from the server\
-        \r## Bugfixes:\
-        \r\t- fixed *\"The application did not respond\"* bug\
-        \r# Post Christmas Procrastination Spree\
-        \r## Commands:\
+    message = f'# CHANGELOG OF THE GLORIOUS {BOT.user.mention}\
+        \rFrom oldest to newest\
+        \r## Christmas of 2023 Procrastination Spree\
+        \r### Commands:\
+        \r\t- **/voteban** - so our beloved admin wouldn\'t have to deal with it <:pocem:1037501105774538863>\
+        \r\t- **/gasparko** - best thing ever\
+        \r### Other notes:\
+        \r\t- a couple of *particular* tokens returning *particular* messages that underwent a major rework and apparently still need some work <:velkySmutok:1167847065968189550>\
+        \r## Post Christmas of 2023 Procrastination Spree\
+        \r### Commands:\
         \r\t- **/whats_new** - describes some new features, get more detail by invoking the **/whats_new** command || fuck recursion <:pocem:1037501105774538863> ||\
         \r\t- **/voteban_stats** - shows current vote count for each ban candidate\
         \r\t- **/self_unverify** - bans you for a given time period set by you\
         \r\t- **/time_left** - shows when you will be unbanned, you need to be banned to see that tho\
-        \r# Christmas Procrastination Spree\
-        \r## Commands:\
-        \r\t- **/voteban** - so our beloved admin wouldn't have to deal with it <:pocem:1037501105774538863>\
-        \r\t- **/gasparko** - best thing ever\
-        \r## Other notes:\
-        \r\t- a couple of particular tokens returning particular messages that underwent a major rework and apparently still need some work <:velkySmutok:1167847065968189550>"
+        \r## 05.01.2024 Changelog\
+        \r### Commands:\
+        \r\t- **/gasparko_tierlist** - shows today\'s gasparko leaderboard\
+        \r### Other notes:\
+        \r\t- turned this message around so the newest stuff is at the bottom <:pocem:1037501105774538863>\
+        \r\t- freshly unbanned user will be tagged in the bot room\
+        \r\t- **/voteban** now shows who voted for whom and for how long upon invoking\
+        \r\t- **/gasparko** is now usable only once every 24 hours, let\'s be fair people <:velkaRadost:1169613223734026253>, resets at midnight\
+        \r\t- {BOT.user.mention} now announces when it connects and disconnects from the server\
+        \r### Bugfixes:\
+        \r\t- fixed *"The application did not respond"* bug when using **/self_unverify**'
     await ctx.send(message)
 ###########################################################################
 
