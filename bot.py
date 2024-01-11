@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from interactions import (Client, Intents, Status, SlashContext, Member, Task, IntervalTrigger, TimeTrigger, OptionType, Activity, ActivityType, 
                           listen, slash_command, slash_option)
 from interactions.api.events import MessageCreate
-from typing import cast
 
 # Custom lib
 from user import User, get_user, print_stats, print_gasparko_tierlist
@@ -23,8 +22,8 @@ NORMAL_ROLE = int(getenv("NORMAL_ROLE"))
 HLASKA_ROLE = int(getenv("HLASKA_ROLE"))
 VAZENIE_ROOM = int(getenv("VAZENIE_ROOM"))
 BOT_ROOM = int(getenv("BOT_ROOM"))
-BAN_LIST = []
-BANNED = []
+BAN_LIST = [] # list to keep track of votes
+BANNED = [] # list of actually banned users
 GASPARKO_LIST = []
 
 BOT = Client(intents=Intents.DEFAULT | 
@@ -192,8 +191,6 @@ async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
     if await admin_checker(ctx):
         return
 
-    active_users = len([m for m in ctx.guild.humans if m.status and m.status != Status.OFFLINE])
-
     if naughty_boy.id == ctx.member.id:
         await ctx.send(f'You can\'t ban yourself, dummy <:pocem:1037501105774538863>', ephemeral=True)
         return
@@ -215,9 +212,9 @@ async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
         if curr_user.voter_is_present(ctx.member.id):
             await ctx.send(f'You already voted to ban {naughty_boy.display_name}, dummy <:pocem:1037501105774538863>', ephemeral=True)
             return
-        curr_user.update_stats(naughty_boy.display_name, ctx.member.id, hours, active_users)
+        curr_user.update_stats(naughty_boy.display_name, ctx.member.id, hours)
     else:
-        BAN_LIST.append(User(naughty_boy.id, naughty_boy.display_name, ctx.member.id, hours, active_users, naughty_boy))
+        BAN_LIST.append(User(naughty_boy.id, naughty_boy.display_name, ctx.member.id, hours, len(ctx.guild.humans), naughty_boy))
 
     await ctx.send(f'{ctx.member.display_name} voted to ban {naughty_boy.display_name} for {hours}h\n\n{print_stats(BAN_LIST)}')
 
@@ -234,6 +231,7 @@ async def unvoteban(ctx: SlashContext, naughty_boy: Member):
     curr_user = get_user(naughty_boy.id, BAN_LIST)
     try:
         del curr_user.voters[ctx.member.id]
+        curr_user.decrease_vote()
         if not curr_user.voters:
             BAN_LIST.pop(BAN_LIST.index(curr_user))
         await ctx.send("Okay <:velkaRadost:1169613223734026253>", ephemeral=True)
@@ -246,9 +244,11 @@ async def self_unverify(ctx: SlashContext, hours: int):
     if await admin_checker(ctx):
         return
 
+    # this is a bit stupid, might need a rework, works tho
     curr_user = get_user(ctx.member.id, BAN_LIST)
     if curr_user:
         BAN_LIST.pop(BAN_LIST.index(curr_user))
+    # required for ban() function
     BAN_LIST.append(User(ctx.member.id, ctx.member.display_name, ctx.member.id, hours, 0, ctx.member))
     curr_user = get_user(ctx.member.id, BAN_LIST)
     tmp = await ctx.send("Alright", ephemeral=True)
@@ -287,6 +287,9 @@ async def voteban_stats(ctx: SlashContext):
 @slash_command(name="whats_new", description="What are some new features?")
 async def whats_new(ctx: SlashContext):
     with open("changelog.md", 'r') as cl:
+        # please, after any behavior changing contribution, mention yourself in the changelog
+        # and add {"your_username": ctx.guild.get_member(your_user_id).display_name} into the .format dict
+        # and {your_username} field into the changelog
         await ctx.send(cl.read().format(**{"bot_name": BOT.user.mention})) # fill modular fields in changelog
 ###########################################################################
 

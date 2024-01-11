@@ -29,3 +29,4 @@ From oldest to newest
 ### Other notes:
 - {bot_name} no longer tags users after unbanning them
 - **/time_left** formatting is better now
+- **/voteban** now takes into account all users, not only the ones that were "online"
