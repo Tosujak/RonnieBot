@@ -57,7 +57,7 @@ GOOD_NWORDS = ["niggard",
                "snigger"]
 
 # AUX METHODS #
-############################
+################################################################
 async def ban(bannee: User, ctx: SlashContext, str_format: str):
     bannee.set_duration(datetime.now() + timedelta(hours=bannee.get_duration()))
     BAN_LIST.pop(BAN_LIST.index(bannee))
@@ -71,7 +71,7 @@ async def ban(bannee: User, ctx: SlashContext, str_format: str):
     await bannee.instance.remove_role(HLASKA_ROLE)
 
 async def admin_checker(ctx: SlashContext):
-    if BAN_ROLE in [role.id for role in ctx.member.roles] and ctx.guild.is_owner(ctx.member.id):
+    if get_user(ctx.member.id, BANNED) and ctx.guild.is_owner(ctx.member.id):
         await ctx.send(f'{ctx.member.display_name} stop it, dummy <:pocem:1037501105774538863>', ephemeral=True)
         return True
     else:
@@ -81,10 +81,10 @@ async def sig_handler(_):
     await BOT.get_channel(BOT_ROOM).send(f'{BOT.user.mention} **GOING OFFLINE**, smell ya later nerds <:nrd:1165680185933312120>')
     await gather(ensure_future(BOT.stop()))
     get_event_loop().stop()
-############################
+################################################################
 
 # TASKS #
-########################################
+#########################################
 @Task.create(IntervalTrigger(seconds=30))
 async def check_unban():
     unbanned = []
@@ -95,13 +95,12 @@ async def check_unban():
             await bannee.instance.add_role(HLASKA_ROLE)
             unbanned.append(BANNED.index(bannee))
     for i in unbanned:
-        user = cast(User, BANNED.pop(i))
-        await BOT.get_channel(BOT_ROOM).send(f'Welcome back {user.instance.mention}')
+        BANNED.pop(i)
 
 @Task.create(TimeTrigger(hour=0, minute=0, utc=False))
 async def reset():
     GASPARKO_LIST.clear()
-########################################
+#########################################
 
 # ADMIN COMMANDS #
 ##########################################################################################
@@ -226,8 +225,20 @@ async def voteban(ctx: SlashContext, naughty_boy: Member, hours: int):
     if curr_user.is_bannable():
         await ban(curr_user, ctx, "Banned {user} until {date}")
 
-# @interactions.slash_command(name="voteunban", description=)
-# TODO check if user can unvote by checking if he is in the voter list
+@slash_command(name="unvoteban", description="Redact your vote to ban a particular user")
+@slash_option(name="naughty_boy", description="Someone you don't want to ban anymore", required=True, opt_type=OptionType.USER)
+async def unvoteban(ctx: SlashContext, naughty_boy: Member):
+    if not BAN_LIST:
+        await ctx.send("Nobody to unvoteban, dummy <:pocem:1037501105774538863>", ephemeral=True)
+
+    curr_user = get_user(naughty_boy.id, BAN_LIST)
+    try:
+        del curr_user.voters[ctx.member.id]
+        if not curr_user.voters:
+            BAN_LIST.pop(BAN_LIST.index(curr_user))
+        await ctx.send("Okay <:velkaRadost:1169613223734026253>", ephemeral=True)
+    except Exception:
+        await ctx.send(f'You didn\'t vote to ban this user, dummy <:pocem:1037501105774538863>', ephemeral=True)
 
 @slash_command(name="self_unverify", description="For nerds; ban yourself for a given time period")
 @slash_option(name="hours", description="Time in hours", required=True, opt_type=OptionType.INTEGER, min_value=1, max_value=24)
@@ -246,11 +257,19 @@ async def self_unverify(ctx: SlashContext, hours: int):
 
 @slash_command(name="time_left", description="How long until I get unbanned?")
 async def time_left(ctx: SlashContext):
-    # admin check
-    if BAN_ROLE not in [role.id for role in ctx.member.roles] and ctx.guild.is_owner(ctx.member.id):
+    # special admin check
+    if not get_user(ctx.member.id, BANNED) and ctx.guild.is_owner(ctx.member.id):
         await ctx.send(f'{ctx.member.display_name} stop it, dummy <:pocem:1037501105774538863>', ephemeral=True)
         return
-    await ctx.send(f'You will be banned until {get_user(ctx.member.id, BANNED).end_date}', ephemeral=True)
+
+    diff = str(get_user(ctx.member.id, BANNED).end_date - datetime.now())
+
+    # past end_time, waiting for task to unban user
+    if "-1 day" in diff:
+        await ctx.send("Any time now...", ephemeral=True)
+        return
+    times = diff.split('.')[0].split(':') # input looks like "23:52:15.66424"
+    await ctx.send("You will be banned for {} hours, {} minutes and {} seconds".format(*[int(time) for time in times]), ephemeral=True)
 
 @slash_command(name="voteban_stats", description="How many votes does each bannee have?")
 async def voteban_stats(ctx: SlashContext):
@@ -267,32 +286,8 @@ async def voteban_stats(ctx: SlashContext):
 ###########################################################################
 @slash_command(name="whats_new", description="What are some new features?")
 async def whats_new(ctx: SlashContext):
-    message = f'# CHANGELOG OF THE GLORIOUS {BOT.user.mention}\
-        \rFrom oldest to newest\
-        \r## Christmas of 2023 Procrastination Spree\
-        \r### Commands:\
-        \r\t- **/voteban** - so our beloved admin wouldn\'t have to deal with it <:pocem:1037501105774538863>\
-        \r\t- **/gasparko** - best thing ever\
-        \r### Other notes:\
-        \r\t- a couple of *particular* tokens returning *particular* messages that underwent a major rework and apparently still need some work <:velkySmutok:1167847065968189550>\
-        \r## Post Christmas of 2023 Procrastination Spree\
-        \r### Commands:\
-        \r\t- **/whats_new** - describes some new features, get more detail by invoking the **/whats_new** command || fuck recursion <:pocem:1037501105774538863> ||\
-        \r\t- **/voteban_stats** - shows current vote count for each ban candidate\
-        \r\t- **/self_unverify** - bans you for a given time period set by you\
-        \r\t- **/time_left** - shows when you will be unbanned, you need to be banned to see that tho\
-        \r## 05.01.2024 Changelog\
-        \r### Commands:\
-        \r\t- **/gasparko_tierlist** - shows today\'s gasparko leaderboard\
-        \r### Other notes:\
-        \r\t- turned this message around so the newest stuff is at the bottom <:pocem:1037501105774538863>\
-        \r\t- freshly unbanned user will be tagged in the bot room\
-        \r\t- **/voteban** now shows who voted for whom and for how long upon invoking\
-        \r\t- **/gasparko** is now usable only once every 24 hours, let\'s be fair people <:velkaRadost:1169613223734026253>, resets at midnight\
-        \r\t- {BOT.user.mention} now announces when it connects and disconnects from the server\
-        \r### Bugfixes:\
-        \r\t- fixed *"The application did not respond"* bug when using **/self_unverify**'
-    await ctx.send(message)
+    with open("changelog.md", 'r') as cl:
+        await ctx.send(cl.read().format(**{"bot_name": BOT.user.mention})) # fill modular fields in changelog
 ###########################################################################
 
 @listen()
@@ -305,6 +300,7 @@ async def on_message_create(event: MessageCreate):
 
     # naughty
     for word in words:
+        # fuck this regex in particular
         if search(r"^n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*$", word):
             tag = True
             if not any(x in word for x in GOOD_NWORDS):
