@@ -351,6 +351,10 @@ async def on_message_create(event: MessageCreate):
         if picked == "child porn":
             await event.message.channel.send(f'YOU DID IT {event.message.author.mention} :partying_face:')
 
+    # povedz lod
+    if "lod" in words and "povedz" not in words:
+        await event.message.channel.send("Do pici chod <:pocem:1037501105774538863>")
+
 @listen()
 async def on_startup():
     for guild in BOT.guilds:
