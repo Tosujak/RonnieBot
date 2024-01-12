@@ -26,10 +26,10 @@ From oldest to newest
 ## 10.01.2024
 ### Commands:
 - **/unvoteban** - removes your vote to ban a particular user
-## 12.01.2024
-### Commands:
-- **/kali** - neviem po anglicky, kali je super <3
 ### Other notes:
 - {bot_name} no longer tags users after unbanning them
 - **/time_left** formatting is better now
 - **/voteban** now takes into account all users, not only the ones that were "online"
+## 12.01.2024
+### Commands:
+- **/kali** - neviem po anglicky, kali je super <3
