@@ -33,3 +33,4 @@ From oldest to newest
 ## 12.01.2024
 ### Commands:
 - **/kali** - neviem po anglicky, kali je super <3
+- **/kali_pomoc** - citis sa zle???? KALI TI POMOZE !!!!!
