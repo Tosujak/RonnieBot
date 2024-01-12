@@ -30,3 +30,6 @@ From oldest to newest
 - {bot_name} no longer tags users after unbanning them
 - **/time_left** formatting is better now
 - **/voteban** now takes into account all users, not only the ones that were "online"
+## 12.01.2024
+### Commands:
+- **/kali** - neviem po anglicky, kali je super <3

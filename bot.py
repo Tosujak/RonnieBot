@@ -280,6 +280,31 @@ async def voteban_stats(ctx: SlashContext):
     else:
         message = "There currently are no votes"
     await ctx.send(message)
+
+@slash_command(name="kali", description="Raz bol jeden kral")
+async def kali_pesnic(ctx: SlashContext):
+    await ctx.send("""Milovala si ma viem.
+Ty a ja, náš malý sen
+a ja som ti sľúbil, že ťa neopustím, neodídem.
+Závidia nám to čo máme, na knihu romantickú námet.
+Kto by to bol povedal, že jedného dňa jej budem písať záveť.
+Kráľovná a kráľ, tvoríme dokonalý pár
+to čo prežívame spolu je ako z rozprávkových strán.
+Ja mám krídla, ty chceš lietať, ty sa pozrieš a ja viem kam,
+len s tebou poletím aj keď sa bojím výšok, lietam.
+Som stratený v oblakoch, lietam len s ňou,
+len s tebou láska ten život je hrou.
+Sľúbim ti všetko len ostaň so mnou.
+Len s tebou navždy, nepôjdem za inou.
+Ale jak už býva zvykom, tak jeden posere to a pochová vzťah.
+Idem za inou na teba zabúdam a bez výčitiek mením plán nám a
+Cítiš sa ako v zlom sne,
+keď mením meno, mením posteľ
+a odchádzam na breh a ty tam stojíš sama na zapálenom moste.
+Raz bol jeden kráľ, čo kráľovstvo mal
+pre pár nocí s inou sa kráľovny vzdal.
+Raz bol jeden kráľ, sa žobrákom stal
+keď kráľovstvo padá, svet nocí nastal.""")
 ################################################################################
 
 # NEWS TELLER #
