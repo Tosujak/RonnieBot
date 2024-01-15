@@ -1,5 +1,4 @@
 # feature list
-- check for continuous nigg.. messages
 - smth smth deez nuts, tvoja mamka, kulo
 - votefree
 - change bot's profile picture based on nwords

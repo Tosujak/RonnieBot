@@ -56,6 +56,8 @@ GOOD_NWORDS = ["niggard",
                "niggl",
                "snigger"]
 
+nword_state_counter = 0
+
 # AUX METHODS #
 ################################################################
 async def ban(bannee: User, ctx: SlashContext, str_format: str):
@@ -343,7 +345,34 @@ async def on_message_create(event: MessageCreate):
         elif search(r"^n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*$", word):
             await event.message.channel.send(":warning:")
             return
-        
+
+    # naughty char by char
+    global nword_state_counter
+    # epic FSM moment
+    if (nword_state_counter == 0 and words[0].lower() == "n"):
+        nword_state_counter += 1
+    elif (nword_state_counter == 1 and words[0].lower() == "i"):
+        nword_state_counter += 1
+    elif (nword_state_counter == 1 and words[0].lower() == "e"):
+        nword_state_counter += 5
+    elif (nword_state_counter == 2 and words[0].lower() == "g"):
+        nword_state_counter += 1
+    elif (nword_state_counter == 3 and words[0].lower() == "g"):
+        nword_state_counter += 1
+    elif (nword_state_counter == 4 and words[0].lower() == "a"):
+        nword_state_counter = 0
+        await event.message.channel.send(":warning::warning::warning:")
+        return
+    elif (nword_state_counter == 4 and words[0].lower() == "e"):
+        nword_state_counter += 1
+    elif (nword_state_counter == 5 and words[0].lower() == "r"):
+        nword_state_counter += 0
+        await event.message.channel.send(":warning::warning::warning:")
+        return
+    elif (nword_state_counter == 6 and words[0].lower() == "g"):
+        nword_state_counter -= 2
+    else:
+        nword_state_counter = 0
 
     # message nerder
     # if event.message.author.id == NERD_USER:
