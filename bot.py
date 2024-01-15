@@ -378,4 +378,5 @@ async def on_startup():
     reset.start()
     ###################
 
+print(f"[{datetime.now().strftime('%H:%M:%S')}]: Starting the bot")
 BOT.start(TOKEN)
