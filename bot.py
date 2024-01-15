@@ -334,18 +334,16 @@ async def on_message_create(event: MessageCreate):
         return
 
     words = event.message.content.lower().split(" ")
-    tag = False
 
     # naughty
     for word in words:
+        if any(x in word for x in GOOD_NWORDS):
+            await event.message.add_reaction("<:pampolicaj:1065346947734577266>")
         # fuck this regex in particular
-        if search(r"^n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*$", word):
-            tag = True
-            if not any(x in word for x in GOOD_NWORDS):
-                await event.message.channel.send(":warning:")
-                return
-    if tag:
-        await event.message.add_reaction("<:pampolicaj:1065346947734577266>")
+        elif search(r"^n+([ehiy]+|ay|ey|io|[il]+)[gq$]+h?(a+|aer|a+h+|a+r+|e+|ea|eoa|e+r+|ie|ier|let|lit|o|or|r+|u|uh|uhr|u+r+|ward|y+)s*$", word):
+            await event.message.channel.send(":warning:")
+            return
+        
 
     # message nerder
     # if event.message.author.id == NERD_USER:
