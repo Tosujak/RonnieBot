@@ -47,7 +47,8 @@ CP_OPTS = ["club penguin",
            "cibulova polievka",
            "cunt piercing",
            "cestovny poriadok",
-           "cerebral palsy"]
+           "cerebral palsy",
+           "collosal pipik"]
 
 GOOD_NWORDS = ["niggard",
                "niggerf",

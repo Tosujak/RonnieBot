@@ -26,7 +26,6 @@ In the `App-Settings-OAuth2->URL Generator` section, tick all these checkboxes:
 - in `SCOPES`
     - bot
     - applications.commands
-    - messages.read
 - in `BOT PERMISSIONS`
     - Manage Roles
     - Read Messages/View Channels
