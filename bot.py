@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from interactions import (Client, Intents, Status, SlashContext, Member, Task, IntervalTrigger, TimeTrigger, OptionType, Activity, ActivityType, 
                           listen, slash_command, slash_option)
 from interactions.api.events import MessageCreate
-from fsm import nword_fsm
+from fsm import should_send_warning
 
 # Custom lib
 from user import User, get_user, print_stats, print_gasparko_tierlist
@@ -57,7 +57,6 @@ GOOD_NWORDS = ["niggard",
                "niggl",
                "snigger"]
 
-nword_room_counters = {}  # format: roomID: counter
 
 # AUX METHODS #
 ################################################################
@@ -348,21 +347,10 @@ async def on_message_create(event: MessageCreate):
             return
 
     # naughty char by char
-    global nword_room_counters
-    # if it doesnt exist, create a new channel entry in the counter dict
-    if not event.message.channel.id in nword_room_counters.keys():
-        nword_room_counters[event.message.channel.id] = 0
-    nword_counter = nword_room_counters[event.message.channel.id]
-    
-    is_counter_filled, new_state = nword_fsm(nword_counter, words[0])
-    if is_counter_filled:
-        # reset counter for given room and send warning msg
-        nword_room_counters[event.message.channel.id] = 0  
+    if should_send_warning(event.message.channel.id, words[0]):
         await event.message.channel.send(":warning::warning::warning:")
         return
-    else:
-        nword_room_counters[event.message.channel.id] = new_state
-    print(nword_room_counters)
+    
     # message nerder
     # if event.message.author.id == NERD_USER:
     #     await event.message.add_reaction("\U0001F913")

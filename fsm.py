@@ -1,3 +1,5 @@
+nword_room_counters = {}  # format: roomID: counter
+
 def nword_fsm(nword_counter, msg):
     # epic FSM moment
     if (nword_counter == 0 and msg.lower() == "n"):
@@ -20,4 +22,21 @@ def nword_fsm(nword_counter, msg):
         return False, 4
     else:
         return False, 0
+    
+    
+def should_send_warning(channel_id, msg):
+    global nword_room_counters
+    # if it doesnt exist, create a new channel entry in the counter dict
+    if not channel_id in nword_room_counters.keys():
+        nword_room_counters[channel_id] = 0
+    nword_counter = nword_room_counters[channel_id]
+    
+    is_counter_filled, new_state = nword_fsm(nword_counter, msg)
+    if is_counter_filled:
+        # reset counter for given room and send warning msg
+        nword_room_counters[channel_id] = 0  
+        return True
+    else:
+        nword_room_counters[channel_id] = new_state
+        return False
     
