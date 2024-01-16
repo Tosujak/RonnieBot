@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from interactions import (Client, Intents, Status, SlashContext, Member, Task, IntervalTrigger, TimeTrigger, OptionType, Activity, ActivityType, 
                           listen, slash_command, slash_option)
 from interactions.api.events import MessageCreate
+from fsm import nword_fsm
 
 # Custom lib
 from user import User, get_user, print_stats, print_gasparko_tierlist
@@ -56,7 +57,7 @@ GOOD_NWORDS = ["niggard",
                "niggl",
                "snigger"]
 
-nword_state_counter = 0
+nword_room_counters = {}  # format: roomID: counter
 
 # AUX METHODS #
 ################################################################
@@ -347,33 +348,21 @@ async def on_message_create(event: MessageCreate):
             return
 
     # naughty char by char
-    global nword_state_counter
-    # epic FSM moment
-    if (nword_state_counter == 0 and words[0].lower() == "n"):
-        nword_state_counter += 1
-    elif (nword_state_counter == 1 and words[0].lower() == "i"):
-        nword_state_counter += 1
-    elif (nword_state_counter == 1 and words[0].lower() == "e"):
-        nword_state_counter += 5
-    elif (nword_state_counter == 2 and words[0].lower() == "g"):
-        nword_state_counter += 1
-    elif (nword_state_counter == 3 and words[0].lower() == "g"):
-        nword_state_counter += 1
-    elif (nword_state_counter == 4 and words[0].lower() == "a"):
-        nword_state_counter = 0
+    global nword_room_counters
+    # if it doesnt exist, create a new channel entry in the counter dict
+    if not event.message.channel.id in nword_room_counters.keys():
+        nword_room_counters[event.message.channel.id] = 0
+    nword_counter = nword_room_counters[event.message.channel.id]
+    
+    is_counter_filled, new_state = nword_fsm(nword_counter, words[0])
+    if is_counter_filled:
+        # reset counter for given room and send warning msg
+        nword_room_counters[event.message.channel.id] = 0  
         await event.message.channel.send(":warning::warning::warning:")
         return
-    elif (nword_state_counter == 4 and words[0].lower() == "e"):
-        nword_state_counter += 1
-    elif (nword_state_counter == 5 and words[0].lower() == "r"):
-        nword_state_counter += 0
-        await event.message.channel.send(":warning::warning::warning:")
-        return
-    elif (nword_state_counter == 6 and words[0].lower() == "g"):
-        nword_state_counter -= 2
     else:
-        nword_state_counter = 0
-
+        nword_room_counters[event.message.channel.id] = new_state
+    print(nword_room_counters)
     # message nerder
     # if event.message.author.id == NERD_USER:
     #     await event.message.add_reaction("\U0001F913")
